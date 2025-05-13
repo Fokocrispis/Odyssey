@@ -30,6 +30,10 @@ public class CharacterAnimationManager {
         this.sequenceManager = new SpriteSequenceManager();
     }
     
+    public SpriteSequenceManager getSequenceManager() {
+        return this.sequenceManager;
+    }
+    
     /**
      * Loads all standard animations for this character
      */

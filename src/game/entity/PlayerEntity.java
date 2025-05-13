@@ -141,6 +141,7 @@ public class PlayerEntity extends AbstractEntity {
         stateLockDurations.put(PlayerState.ATTACKING, 300L); // Attack is locked for 300ms
         stateLockDurations.put(PlayerState.LANDING, 200L); // Landing is locked for 200ms
         stateLockDurations.put(PlayerState.JUMPING, 100L); // Jump start is locked for 100ms
+        stateLockDurations.put(PlayerState.WALKING, 1000L); // Jump start is locked for 100ms
         
         // Set up cooldowns for various actions
         actionCooldowns.put("slide", 500L); // Can't slide again for 500ms
@@ -150,6 +151,7 @@ public class PlayerEntity extends AbstractEntity {
         actionCooldowns.put("teleport", 800L); // Teleport cooldown
         actionCooldowns.put("short_teleport", 400L); // Short teleport cooldown
         actionCooldowns.put("hook", 1000L); // Hook cooldown
+        actionCooldowns.put("walk", 1000L); // Hook cooldown
     }
     
     @Override

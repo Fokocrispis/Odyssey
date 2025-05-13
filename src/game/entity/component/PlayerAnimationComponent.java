@@ -65,6 +65,7 @@ public class PlayerAnimationComponent implements Component {
         contextualSprites.put("turn_right", animationManager.getAnimation("break_run"));
         contextualSprites.put("run_to_stop", animationManager.getAnimation("break_run"));
         contextualSprites.put("run_start", animationManager.getAnimation("to_run"));
+        contextualSprites.put("walk", animationManager.getAnimation("player_walk"));
         
         // Common action sprites
         contextualSprites.put("light_attack", animationManager.getAnimation("light_attack"));
@@ -74,8 +75,97 @@ public class PlayerAnimationComponent implements Component {
         // Set initial sprite
         currentSprite = stateSprites.get(PlayerState.IDLE);
         
+        // Apply manual offsets directly to sprites
+        applyManualOffsets();
+        
         // Print loaded animations for debugging
         animationManager.printLoadedAnimations();
+        
+        // Verify sprite offsets after loading
+        verifyOffsets();
+    }
+    
+    /**
+     * Applies manual offsets directly to sprites
+     */
+    private void applyManualOffsets() {
+        // Idle sprite adjustments
+        Sprite idleSprite = stateSprites.get(PlayerState.IDLE);
+        if (idleSprite != null) {
+            idleSprite.setScale(3.0, 3.0);
+            idleSprite.setOffset(0, 30);
+        }
+        
+        // Run sprite adjustments
+        Sprite runSprite = stateSprites.get(PlayerState.RUNNING);
+        if (runSprite != null) {
+            runSprite.setScale(3.0, 3.0);
+            runSprite.setOffset(0, 30);
+        }
+        
+        // Run sprite adjustments
+        Sprite walkSprite = stateSprites.get(PlayerState.WALKING);
+        if (walkSprite != null) {
+            walkSprite.setScale(3.0, 3.0);
+            walkSprite.setOffset(0, 30);
+        }
+        
+        // Dash sprite adjustments
+        Sprite dashSprite = contextualSprites.get("dash");
+        if (dashSprite != null) {
+            dashSprite.setScale(3.3, 2.8);
+            dashSprite.setOffset(15, 30);
+        }
+        
+        // Attack sprite adjustments
+        Sprite attackSprite = contextualSprites.get("light_attack");
+        if (attackSprite != null) {
+            attackSprite.setScale(4.0, 3.0);
+            attackSprite.setOffset(30, 30);
+        }
+        
+        // Landing sprite adjustments
+        Sprite landSprite = contextualSprites.get("land");
+        if (landSprite != null) {
+            landSprite.setScale(2.8, 3.0);
+            landSprite.setOffset(0, 15);
+        }
+        
+        // Turn sprite adjustments
+        Sprite turnSprite = contextualSprites.get("turn_left");
+        if (turnSprite != null) {
+            turnSprite.setScale(3.1, 3.0);
+            turnSprite.setOffset(10, 0);
+        }
+        
+        System.out.println("Applied manual sprite offsets to animations");
+    }
+    
+    /**
+     * Verifies sprite offsets are correctly applied
+     */
+    private void verifyOffsets() {
+        if (currentSprite != null) {
+            System.out.println("Current sprite offset verification: " + currentSprite.getName() + 
+                              ", offsetX: " + currentSprite.getOffsetX() + 
+                              ", offsetY: " + currentSprite.getOffsetY());
+        }
+        
+        // Check a few key sprites
+        checkSpriteOffset("idle", stateSprites.get(PlayerState.IDLE));
+        checkSpriteOffset("run", stateSprites.get(PlayerState.RUNNING));
+        checkSpriteOffset("dash", contextualSprites.get("dash"));
+    }
+    
+    private void checkSpriteOffset(String name, Sprite sprite) {
+        if (sprite != null) {
+            System.out.println("Sprite '" + name + 
+                              "' offset: X=" + sprite.getOffsetX() + 
+                              ", Y=" + sprite.getOffsetY() + 
+                              ", Size=" + sprite.getSize().width + "x" + sprite.getSize().height);
+        } else {
+            System.out.println("Sprite '" + name + "' is null");
+        }
     }
     
     private void updateSprite(long deltaTime) {
@@ -192,6 +282,11 @@ public class PlayerAnimationComponent implements Component {
         if (newSprite != null && newSprite != currentSprite) {
             currentSprite = newSprite;
             resetCurrentSprite();
+            
+            // Debug - log the sprite change
+            System.out.println("Sprite changed to: " + newSprite.getName() + 
+                              ", offsetX: " + newSprite.getOffsetX() + 
+                              ", offsetY: " + newSprite.getOffsetY());
         }
     }
     
@@ -206,7 +301,6 @@ public class PlayerAnimationComponent implements Component {
         return ComponentType.ANIMATION;
     }
     
-    // Fixed render method with @Override annotation
     public void render(Graphics2D g) {
         if (!player.isVisible() || currentSprite == null) return;
         
@@ -342,18 +436,16 @@ public class PlayerAnimationComponent implements Component {
             }
         }
         
-     // Continuing from the previous code...
-        
         // Show animation info
         g.drawString("Animation: " + (currentSprite != null ? currentSprite.getName() : "none"), 
                     (int)player.getPosition().getX() - 80, (int)player.getPosition().getY() - 40);
-        }
-        
-        public void toggleDebugRender() {
-            debugRender = !debugRender;
-        }
-        
-        public Sprite getCurrentSprite() {
-            return currentSprite;
-        }
     }
+    
+    public void toggleDebugRender() {
+        debugRender = !debugRender;
+    }
+    
+    public Sprite getCurrentSprite() {
+        return currentSprite;
+    }
+}

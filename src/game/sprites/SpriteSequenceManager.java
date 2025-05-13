@@ -34,11 +34,23 @@ public class SpriteSequenceManager {
         double scale = 3.0;
         
         // Configure adjustments for animations that need them
-        registerAdjustment("player_walk", new Dimension(190, 160), 0, 0);
-        registerAdjustment("player_run", new Dimension(180, 170), 0, 50);
+        registerAdjustment("player_walk", new Dimension(190, 160), 0, 10);
+        registerAdjustment("player_run", new Dimension(1380, 170), 0, 10);
         registerAdjustment("player_dash", new Dimension(200, 150), 10, 5);
         
         // Load basic player animations
+        
+        loadSpriteSequence(
+                "player_walk",
+                "Sprites/Joanna/Walk/Walking",
+                "Walking",
+                18,
+                frameSize,
+                scale,
+                Duration.ofMillis(1000),
+                true
+            );
+        
         loadSpriteSequence(
             "player_idle",
             "Sprites/Joanna/Idle",
