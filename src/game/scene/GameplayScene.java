@@ -126,7 +126,7 @@ public class GameplayScene extends AbstractScene {
         
         // Position player ABOVE the floor surface with a small gap
         double playerStartX = 5 * SCALE; // 5 meters from left
-        double playerStartY = floorSurfaceY - (playerHeight / 2.0) - 2; // 2 pixel gap above floor
+        double playerStartY = floorSurfaceY - (playerHeight / 2.0) - 200; // 2 pixel gap above floor
         
         player = new PlayerEntity(
             playerStartX,

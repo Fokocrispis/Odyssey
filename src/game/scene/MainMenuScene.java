@@ -3,11 +3,18 @@ package game.scene;
 
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.FontFormatException;
 import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 import game.Game;
 import game.audio.SoundManager;
+import game.resource.ResourceManager;
 
 /**
  * Main menu scene that appears when the game starts.
@@ -26,6 +33,13 @@ public class MainMenuScene extends AbstractScene {
     private boolean showTitle = true;
     private double titlePulse = 0;
     
+    // Background wallpaper
+    private BufferedImage wallpaper;
+    
+    // Custom font
+    private Font bitPotionFont;
+    private boolean customFontLoaded = false;
+    
     /**
      * Creates a new main menu scene.
      * 
@@ -33,6 +47,60 @@ public class MainMenuScene extends AbstractScene {
      */
     public MainMenuScene(Game game) {
         super(game);
+        loadWallpaper();
+        loadCustomFont();
+    }
+    
+    /**
+     * Loads the wallpaper background image
+     */
+    private void loadWallpaper() {
+        try {
+            // Load wallpaper using ResourceManager
+            wallpaper = ResourceManager.getInstance().loadImage("wallpaper.png");
+            if (wallpaper != null) {
+                System.out.println("Main menu wallpaper loaded successfully");
+            } else {
+                System.err.println("Failed to load wallpaper.png - will use fallback color");
+            }
+        } catch (IOException e) {
+            System.err.println("Error loading wallpaper: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Loads the custom BitPotion font
+     */
+    private void loadCustomFont() {
+        // Try different possible paths to find the font file
+        String[] possiblePaths = {
+            "resources/BitPotion.ttf",
+            "src/resources/BitPotion.ttf",
+            "BitPotion.ttf",
+            "./BitPotion.ttf",
+            "../resources/BitPotion.ttf"
+        };
+        
+        for (String path : possiblePaths) {
+            try {
+                File fontFile = new File(path);
+                if (fontFile.exists()) {
+                    // Load font from file
+                    InputStream is = new FileInputStream(fontFile);
+                    bitPotionFont = Font.createFont(Font.TRUETYPE_FONT, is);
+                    customFontLoaded = true;
+                    System.out.println("BitPotion font loaded successfully from: " + path);
+                    break;
+                }
+            } catch (FontFormatException | IOException e) {
+                System.err.println("Error loading font from " + path + ": " + e.getMessage());
+            }
+        }
+        
+        if (!customFontLoaded) {
+            System.err.println("Failed to load BitPotion font - will use fallback font");
+            bitPotionFont = new Font("Arial", Font.BOLD, 72);
+        }
     }
     
     @Override
@@ -129,25 +197,15 @@ public class MainMenuScene extends AbstractScene {
     
     @Override
     protected void renderUI(Graphics2D g) {
-        // Clear screen with dark background
-        g.setColor(new Color(20, 20, 30));
+        // Draw the wallpaper background
+        drawBackground(g);
+        
+        // Draw semi-transparent overlay for better text visibility
+        g.setColor(new Color(0, 0, 0, 50));
         g.fillRect(0, 0, game.getWidth(), game.getHeight());
         
         // Draw title with pulse animation
-        g.setColor(Color.WHITE);
-        float titleScale = 1.0f + (float)(Math.sin(titlePulse) * 0.05);
-        g.setFont(new Font("Arial", Font.BOLD, (int)(72 * titleScale)));
-        
-        String title = "Proto Knight";
-        int titleWidth = g.getFontMetrics().stringWidth(title);
-        int titleX = (game.getWidth() - titleWidth) / 2;
-        int titleY = 150;
-        
-        // Draw title with glow effect
-        g.setColor(new Color(255, 255, 255, 100));
-        g.drawString(title, titleX + 2, titleY + 2);
-        g.setColor(Color.WHITE);
-        g.drawString(title, titleX, titleY);
+        drawTitle(g);
         
         // Draw version (optional)
         g.setFont(new Font("Arial", Font.PLAIN, 16));
@@ -155,22 +213,7 @@ public class MainMenuScene extends AbstractScene {
         g.drawString("v1.0", game.getWidth() - 60, game.getHeight() - 30);
         
         // Draw menu options
-        g.setFont(new Font("Arial", Font.PLAIN, 32));
-        int menuStartY = 300;
-        int menuSpacing = 60;
-        
-        for (int i = 0; i < menuOptions.length; i++) {
-            // Highlight selected option
-            if (i == selectedOption) {
-                g.setColor(Color.YELLOW);
-                // Draw selection bracket
-                g.drawString(">", 100, menuStartY + i * menuSpacing);
-            } else {
-                g.setColor(Color.WHITE);
-            }
-            
-            g.drawString(menuOptions[i], 140, menuStartY + i * menuSpacing);
-        }
+        drawMenuOptions(g);
         
         // Draw controls
         g.setFont(new Font("Arial", Font.PLAIN, 18));
@@ -183,47 +226,94 @@ public class MainMenuScene extends AbstractScene {
         g.drawString("Volume: " + (int)(soundManager.getMasterVolume() * 100) + "%", 
                     game.getWidth() - 200, game.getHeight() - 40);
     }
+    
+    /**
+     * Draws the title with the custom BitPotion font
+     */
+    private void drawTitle(Graphics2D g) {
+        // Apply pulsing effect to font size
+        float titleScale = 1.0f + (float)(Math.sin(titlePulse) * 0.05);
+        float fontSize = customFontLoaded ? 136.0f : 72.0f; // BitPotion is pixel font so we need larger size
+        
+        // Create derived font with the right size
+        Font titleFont = bitPotionFont.deriveFont(fontSize * titleScale);
+        g.setFont(titleFont);
+        
+        String title = "Odissey";
+        int titleWidth = g.getFontMetrics().stringWidth(title);
+        int titleX = (game.getWidth() - titleWidth) / 2;
+        int titleY = 180; // Slightly lower position for the new title
+        
+        // Draw title with glow effect
+        g.setColor(new Color(255, 255, 255, 100));
+        g.drawString(title, titleX + 3, titleY + 3);
+        
+        // Draw main title with slight gradient effect
+        g.setColor(new Color(255, 235, 180)); // Slight golden tint
+        g.drawString(title, titleX, titleY);
+        
+        // Draw subtitle with smaller font if needed
+        if (customFontLoaded) {
+            Font subtitleFont = bitPotionFont.deriveFont(28.0f);
+            g.setFont(subtitleFont);
+            String subtitle = "Adventure Awaits";
+            int subtitleWidth = g.getFontMetrics().stringWidth(subtitle);
+            g.setColor(new Color(180, 180, 255)); // Light blue tint
+            g.drawString(subtitle, (game.getWidth() - subtitleWidth) / 2, titleY + 50);
+        }
+    }
+    
+    /**
+     * Draws the menu options
+     */
+    private void drawMenuOptions(Graphics2D g) {
+        // Use custom font for menu options if available
+        Font menuFont;
+        int menuStartY = 350; // Adjust based on the new title position
+        int menuSpacing = 60;
+        
+        if (customFontLoaded) {
+            menuFont = bitPotionFont.deriveFont(48.0f);
+        } else {
+            menuFont = new Font("Arial", Font.PLAIN, 32);
+        }
+        
+        g.setFont(menuFont);
+        
+        for (int i = 0; i < menuOptions.length; i++) {
+            // Highlight selected option
+            if (i == selectedOption) {
+                g.setColor(Color.YELLOW);
+                // Draw selection indicator
+                g.drawString(">", 100, menuStartY + i * menuSpacing);
+            } else {
+                g.setColor(Color.WHITE);
+            }
+            
+            g.drawString(menuOptions[i], 140, menuStartY + i * menuSpacing);
+        }
+    }
+    
+    /**
+     * Draws the background wallpaper
+     */
+    private void drawBackground(Graphics2D g) {
+        if (wallpaper != null) {
+            // Scale the wallpaper to fit the screen
+            g.drawImage(wallpaper, 0, 0, game.getWidth(), game.getHeight(), null);
+        } else {
+            // Fallback to gradient background if wallpaper couldn't be loaded
+            Color topColor = new Color(20, 20, 60); // Dark blue
+            Color bottomColor = new Color(40, 40, 100); // Lighter blue
+            
+            // Create a gradient background
+            java.awt.GradientPaint gradient = new java.awt.GradientPaint(
+                0, 0, topColor,
+                0, game.getHeight(), bottomColor
+            );
+            
+            g.setPaint(gradient);
+            g.fillRect(0, 0, game.getWidth(), game.getHeight());
+        }
+    }
 }
-
-// -----------------------------------------------------
-// Update PlatformerGame.java to start with main menu
-// -----------------------------------------------------
-
-/*
-// In PlatformerGame.java, modify initializeScenes():
-
-@Override
-protected void initializeScenes() {
-    // Create main menu scene
-    MainMenuScene mainMenuScene = new MainMenuScene(this);
-    getSceneManager().registerScene("menu", mainMenuScene);
-    
-    // Create the gameplay scene
-    GameplayScene gameplayScene = new GameplayScene(this);
-    getSceneManager().registerScene("gameplay", gameplayScene);
-    
-    // Create settings scene (optional - can be created on demand)
-    SettingsScene settingsScene = new SettingsScene(this);
-    getSceneManager().registerScene("settings", settingsScene);
-    
-    // Set main menu as the initial scene
-    getSceneManager().setInitialScene("menu");
-}
-*/
-
-// -----------------------------------------------------
-// Audio files needed for main menu:
-// -----------------------------------------------------
-
-/*
-Audio files to add to resources/audio/:
-1. menu_music.wav - Background music for main menu
-2. menu_navigate.wav - Sound when navigating menu options
-3. menu_select.wav - Sound when selecting an option
-4. volume_adjust.wav - Sound when adjusting volume
-
-The menu will automatically transition between:
-- Main menu music while on the menu
-- Gameplay music when starting the game
-- Settings music (if you add it) when entering settings
-*/

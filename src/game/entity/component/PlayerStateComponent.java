@@ -127,6 +127,7 @@ public class PlayerStateComponent implements Component {
                     newState = PlayerState.RUNNING;
                     player.setMovementContext(MovementContext.RUNNING);
                 } else {
+                    // Use WALKING state for slow movement
                     newState = PlayerState.WALKING;
                     player.setMovementContext(MovementContext.NORMAL);
                 }
@@ -154,11 +155,12 @@ public class PlayerStateComponent implements Component {
                     newState = PlayerState.IDLE;
                     player.setMovementContext(MovementContext.NORMAL);
                 } else {
-                    // Check if running
+                    // Check if running or walking based on velocity
                     if (velocityX > 450) { // WALK_SPEED * 1.5
                         newState = PlayerState.RUNNING;
                         player.setMovementContext(MovementContext.RUNNING);
                     } else {
+                        // Use walking animation for slower movement
                         newState = PlayerState.WALKING;
                         player.setMovementContext(MovementContext.NORMAL);
                     }

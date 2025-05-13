@@ -7,7 +7,6 @@ import java.util.Map;
 
 /**
  * Character animation manager that loads sprites based on character ID and animation folders.
- * Manages sprites from the resources/Sprites/{characterId} folder structure.
  */
 public class CharacterAnimationManager {
     // Base path to sprites folder in resources
@@ -121,8 +120,8 @@ public class CharacterAnimationManager {
             Dimension frameSize = new Dimension(64, 64);
             double scale = 3.0;
             
-            // Add any Joanna-specific animations here
-            // registerAnimation("special_attack", "SpecialAtk", 15, frameSize, scale, 600, false);
+            // Add walking animation for Joanna - keeping consistent with the implementation approach
+            registerAnimation("walk", "Walking", 18, frameSize, scale, 1000, true);
         }
     }
     

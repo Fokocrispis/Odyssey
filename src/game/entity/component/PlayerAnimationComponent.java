@@ -54,7 +54,7 @@ public class PlayerAnimationComponent implements Component {
     private void loadSprites() {
         // Map character animations to player states
         stateSprites.put(PlayerState.IDLE, animationManager.getAnimation("idle"));
-        stateSprites.put(PlayerState.WALKING, animationManager.getAnimation("run"));
+        stateSprites.put(PlayerState.WALKING, animationManager.getAnimation("walk"));
         stateSprites.put(PlayerState.RUNNING, animationManager.getAnimation("run"));
         stateSprites.put(PlayerState.ATTACKING, animationManager.getAnimation("light_attack"));
         stateSprites.put(PlayerState.DASHING, animationManager.getAnimation("dash"));
@@ -65,7 +65,7 @@ public class PlayerAnimationComponent implements Component {
         contextualSprites.put("turn_right", animationManager.getAnimation("break_run"));
         contextualSprites.put("run_to_stop", animationManager.getAnimation("break_run"));
         contextualSprites.put("run_start", animationManager.getAnimation("to_run"));
-        contextualSprites.put("walk", animationManager.getAnimation("player_walk"));
+        contextualSprites.put("walk", animationManager.getAnimation("walk"));
         
         // Common action sprites
         contextualSprites.put("light_attack", animationManager.getAnimation("light_attack"));
@@ -84,6 +84,7 @@ public class PlayerAnimationComponent implements Component {
         // Verify sprite offsets after loading
         verifyOffsets();
     }
+        
     
     /**
      * Applies manual offsets directly to sprites
@@ -96,18 +97,20 @@ public class PlayerAnimationComponent implements Component {
             idleSprite.setOffset(0, 30);
         }
         
+        // Walk sprite adjustments
+        Sprite walkSprite = stateSprites.get(PlayerState.WALKING);
+        if (walkSprite != null) {
+            walkSprite.setScale(3.0, 3.0);
+            walkSprite.setOffset(0, 30); // Adjusted for walking animation
+        }
+        
         // Run sprite adjustments
         Sprite runSprite = stateSprites.get(PlayerState.RUNNING);
         if (runSprite != null) {
             runSprite.setScale(3.0, 3.0);
-            runSprite.setOffset(0, 30);
-        }
+            runSprite.setOffset(0, 35);
+       
         
-        // Run sprite adjustments
-        Sprite walkSprite = stateSprites.get(PlayerState.WALKING);
-        if (walkSprite != null) {
-            walkSprite.setScale(3.0, 3.0);
-            walkSprite.setOffset(0, 30);
         }
         
         // Dash sprite adjustments
@@ -153,6 +156,7 @@ public class PlayerAnimationComponent implements Component {
         
         // Check a few key sprites
         checkSpriteOffset("idle", stateSprites.get(PlayerState.IDLE));
+        checkSpriteOffset("walk", stateSprites.get(PlayerState.WALKING)); // Added check for walk sprite
         checkSpriteOffset("run", stateSprites.get(PlayerState.RUNNING));
         checkSpriteOffset("dash", contextualSprites.get("dash"));
     }
@@ -192,7 +196,19 @@ public class PlayerAnimationComponent implements Component {
     }
     
     /**
+     * Resets the current sprite animation to its first frame
+     */
+    private void resetCurrentSprite() {
+        if (currentSprite != null) {
+            currentSprite.reset();
+        }
+    }
+    
+    /**
      * Gets an animation by name
+     * 
+     * @param name The animation name to retrieve
+     * @return The sprite, or null if not found
      */
     public Sprite getAnimation(String name) {
         // First check state sprites
@@ -249,6 +265,11 @@ public class PlayerAnimationComponent implements Component {
                 }
                 break;
                 
+            case WALKING:
+                // Use dedicated walking animation
+                newSprite = stateSprites.get(PlayerState.WALKING);
+                break;
+                
             case DASHING:
                 newSprite = contextualSprites.get("dash");
                 if (newSprite == null) {
@@ -260,16 +281,6 @@ public class PlayerAnimationComponent implements Component {
                 newSprite = contextualSprites.get("land");
                 if (newSprite == null) {
                     newSprite = stateSprites.get(PlayerState.LANDING);
-                }
-                break;
-                
-            case WALKING:
-                // Check velocity to decide between walking and running
-                double speed = Math.abs(player.getVelocity().getX());
-                if (speed > 400) {
-                    newSprite = stateSprites.get(PlayerState.RUNNING);
-                } else {
-                    newSprite = stateSprites.get(PlayerState.WALKING);
                 }
                 break;
                 
@@ -287,12 +298,6 @@ public class PlayerAnimationComponent implements Component {
             System.out.println("Sprite changed to: " + newSprite.getName() + 
                               ", offsetX: " + newSprite.getOffsetX() + 
                               ", offsetY: " + newSprite.getOffsetY());
-        }
-    }
-    
-    private void resetCurrentSprite() {
-        if (currentSprite != null) {
-            currentSprite.reset();
         }
     }
     
@@ -445,6 +450,11 @@ public class PlayerAnimationComponent implements Component {
         debugRender = !debugRender;
     }
     
+    /**
+     * Gets the current sprite being displayed
+     * 
+     * @return The current sprite
+     */
     public Sprite getCurrentSprite() {
         return currentSprite;
     }

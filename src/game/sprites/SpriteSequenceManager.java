@@ -42,7 +42,7 @@ public class SpriteSequenceManager {
         
         loadSpriteSequence(
                 "player_walk",
-                "Sprites/Joanna/Walk/Walking",
+                "Sprites/Joanna/Walking",
                 "Walking",
                 18,
                 frameSize,

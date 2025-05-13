@@ -79,12 +79,13 @@ public class PlatformerGame extends Game {
         PhysicsTestScene testScene = new PhysicsTestScene(this);
         getSceneManager().registerScene("test", testScene);
         
-        // Start with gameplay scene to test sprites
-        getSceneManager().setInitialScene("gameplay");
+        // Start with the main menu scene
+        getSceneManager().setInitialScene("menu");
         
-        System.out.println("Initialized scenes - Starting with gameplay scene");
-        System.out.println("Press F10 to toggle sprite adjustment tool");
+        System.out.println("Initialized scenes - Starting with main menu");
     }
+    
+    // Rest of the class remains the same...
     
     /**
      * Overrides the custom update hook to handle sprite adjustment and other features
@@ -119,7 +120,7 @@ public class PlatformerGame extends Game {
             cycleScenes();
         }
     }
-    
+        
     /**
      * Override custom rendering hook for debugging visuals
      */
