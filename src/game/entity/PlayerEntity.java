@@ -223,6 +223,20 @@ public class PlayerEntity extends AbstractEntity {
         animationLockDuration = duration;
     }
     
+ // Add this method to PlayerEntity.java
+
+    /**
+     * Enables or disables player input.
+     * Used during cinematic sequences.
+     */
+    public void setInputEnabled(boolean enabled) {
+        // If you have an input component, you can set a flag in it
+        if (hasComponent(ComponentType.INPUT)) {
+            PlayerInputComponent inputComponent = getComponent(ComponentType.INPUT);
+            inputComponent.setEnabled(enabled);
+        }
+    }
+    
     /**
      * Locks animation based on the current state
      */

@@ -36,6 +36,8 @@ public class PlayerInputComponent implements Component {
     private boolean wasPressingDown = false;
     private long downAndMoveTime = 0;
     
+    private boolean enabled = true;
+    
     public PlayerInputComponent(PlayerEntity player, KeyboardInput input) {
         this.player = player;
         this.input = input;
@@ -43,6 +45,7 @@ public class PlayerInputComponent implements Component {
     
     @Override
     public void update(long deltaTime) {
+    	if (!enabled) return;
         long currentTime = System.currentTimeMillis();
         
         // Always capture input, even when animation-locked
@@ -63,6 +66,14 @@ public class PlayerInputComponent implements Component {
                 handleComboInput(currentTime);
             }
         }
+    }
+    
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
     }
     
     // (Keep the existing captureInputState and updateInputTracking methods)

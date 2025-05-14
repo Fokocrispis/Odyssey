@@ -196,6 +196,8 @@ public class PlayerAttackComponent implements Component {
         }
     }
     
+ // Excerpt of the update to PlayerAttackComponent.java - focusing on ultimate attack modifications
+
     /**
      * Executes the ultimate attack after charging
      */
@@ -249,10 +251,13 @@ public class PlayerAttackComponent implements Component {
             // Set focus and zoom - wide horizontal view, narrow vertical view
             camera.setFocusTarget(focusTarget, false);
             camera.setZoom(1.2, 0.8, 0.1);
+            
+            // Apply letterbox effect and any other visual effects
+            camera.createUltimateAttackEffect(2000); // 2 seconds of cinematic effect
         }
         
-        // Reset time scale
-        TimeManager.getInstance().resetTimeScale();
+        // Slow down time with TimeManager
+        TimeManager.getInstance().setTimeScale(ULTIMATE_TIME_SCALE, 0.1f, 1.0f);
     }
     
     /**
