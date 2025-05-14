@@ -259,6 +259,13 @@ public class CinematicCamera extends Camera {
     }
     
     /**
+     * Gets the camera effects manager
+     */
+    public CameraEffectsManager getEffectsManager() {
+        return effectsManager;
+    }
+    
+    /**
      * Resets the graphics transform and restores the original.
      * Override to handle our stored transform.
      */

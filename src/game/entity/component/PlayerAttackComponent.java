@@ -36,9 +36,13 @@ public class PlayerAttackComponent implements Component {
     private long ultimateChargeStartTime = 0;
     private long ultimateChargeTime = 1000; // Charge time in ms
     private long ultimateExecutionTime = 0;
+    private long ultimateDuration = 1500; // Duration of the ultimate attack
     private long ultimateCooldown = 8000; // Cooldown in ms
     private long lastUltimateTime = 0;
     private float ultimateChargingProgress = 0f;
+    
+    // Damage multiplier during ultimate
+    private float ultimateDamageMultiplier = 3.0f;
     
     // Ultimate attack parameters
     private static final float ULTIMATE_DASH_SPEED = 2000f;
@@ -52,6 +56,11 @@ public class PlayerAttackComponent implements Component {
     
     // Attack damage values
     private Map<String, Integer> attackDamage = new HashMap<>();
+    
+    // Effects for ultimate attack
+    private boolean hasAppliedSlowmo = false;
+    private boolean hasAppliedLetterbox = false;
+    private boolean hasAppliedCameraEffects = false;
     
     /**
      * Creates a new player attack component
@@ -92,7 +101,7 @@ public class PlayerAttackComponent implements Component {
         attackHitboxes.put("dash", new Rectangle(30, -20, 60, 50));
         attackDamage.put("dash", 5);
         
-        // Ultimate attack hitbox
+        // Ultimate attack hitbox - longer horizontal range and higher damage
         attackHitboxes.put("ultimate", new Rectangle(0, -40, ULTIMATE_RANGE, 80));
         attackDamage.put("ultimate", ULTIMATE_DAMAGE);
     }
@@ -131,11 +140,60 @@ public class PlayerAttackComponent implements Component {
         
         // Apply visual charge effect - particle effects could be added here
         
+        // Apply slow-mo effect as charging progresses
+        if (game != null && !hasAppliedSlowmo && ultimateChargingProgress > 0.3f) {
+            TimeManager.getInstance().setTimeScale(ULTIMATE_TIME_SCALE, 0.3f, 0f);
+            hasAppliedSlowmo = true;
+        }
+        
+        // Apply letterbox effect halfway through charging
+        if (game != null && !hasAppliedLetterbox && ultimateChargingProgress > 0.5f) {
+            if (game.getSceneManager().getCurrentScene().getCamera() instanceof CinematicCamera) {
+                CinematicCamera camera = (CinematicCamera) game.getSceneManager().getCurrentScene().getCamera();
+                camera.getEffectsManager().getLetterboxEffect().show(300);
+                hasAppliedLetterbox = true;
+            }
+        }
+        
         // Check if charging is complete
         if (elapsedTime >= ultimateChargeTime) {
             // Execute the ultimate attack
             executeUltimateAttack();
         }
+        
+        // Check for cancellation
+        if (player.getInputComponent() != null && 
+            player.getInputComponent().isUltimateCancelled()) {
+            cancelUltimateCharging();
+        }
+    }
+    
+    /**
+     * Cancels the ultimate attack charging
+     */
+    private void cancelUltimateCharging() {
+        isChargingUltimate = false;
+        ultimateChargingProgress = 0f;
+        
+        // Reset time scale
+        TimeManager.getInstance().resetTimeScale();
+        
+        // Hide letterbox if it was applied
+        if (hasAppliedLetterbox && game != null) {
+            if (game.getSceneManager().getCurrentScene().getCamera() instanceof CinematicCamera) {
+                CinematicCamera camera = (CinematicCamera) game.getSceneManager().getCurrentScene().getCamera();
+                camera.getEffectsManager().getLetterboxEffect().hide(300);
+            }
+        }
+        
+        // Reset player state
+        player.setCasting(false);
+        player.setCurrentState(player.isOnGround() ? PlayerState.IDLE : PlayerState.FALLING);
+        player.unlockAnimation();
+        
+        // Reset flags
+        hasAppliedSlowmo = false;
+        hasAppliedLetterbox = false;
     }
     
     /**
@@ -145,11 +203,79 @@ public class PlayerAttackComponent implements Component {
         long currentTime = System.currentTimeMillis();
         long elapsedTime = currentTime - ultimateExecutionTime;
         
-        // Ultimate attack lasts for 500ms
-        if (elapsedTime >= 500) {
+        // Apply additional camera effects during the execution
+        if (!hasAppliedCameraEffects && elapsedTime > 300) {
+            if (game != null && game.getSceneManager().getCurrentScene().getCamera() instanceof CinematicCamera) {
+                CinematicCamera camera = (CinematicCamera) game.getSceneManager().getCurrentScene().getCamera();
+                // Flash effect halfway through execution
+                camera.flash(2, new java.awt.Color(255, 200, 100), 0.7f);
+                hasAppliedCameraEffects = true;
+            }
+        }
+        
+        // Check for collision with enemies during execution
+        checkUltimateAttackCollisions();
+        
+        // Ultimate attack lasts for the defined duration
+        if (elapsedTime >= ultimateDuration) {
             // End ultimate attack
             completeUltimateAttack();
         }
+    }
+    
+    /**
+     * Checks for collisions with enemies during ultimate attack
+     */
+    private void checkUltimateAttackCollisions() {
+        // Get the ultimate attack hitbox
+        Rectangle baseHitbox = attackHitboxes.get("ultimate");
+        if (baseHitbox == null) return;
+        
+        // Adjust hitbox based on player facing direction
+        int hitboxX;
+        if (player.isFacingRight()) {
+            hitboxX = (int)player.getPosition().getX() + baseHitbox.x;
+        } else {
+            hitboxX = (int)player.getPosition().getX() - baseHitbox.x - baseHitbox.width;
+        }
+        
+        int hitboxY = (int)player.getPosition().getY() + baseHitbox.y;
+        
+        // Create actual hitbox rectangle
+        Rectangle hitbox = new Rectangle(
+            hitboxX,
+            hitboxY,
+            baseHitbox.width,
+            baseHitbox.height
+        );
+        
+        // You would typically check for collisions with the physics system here
+        // This is a simplified version - in a real implementation, you'd check
+        // against all potential entities in the scene
+        
+        // For example:
+        /* 
+        for (PhysicsObject obj : game.getPhysicsSystem().getPhysicsObjects()) {
+            if (obj instanceof EnemyEntity) {
+                EnemyEntity enemy = (EnemyEntity) obj;
+                if (hitbox.intersects(new Rectangle(
+                        (int)enemy.getPosition().getX() - enemy.getWidth()/2,
+                        (int)enemy.getPosition().getY() - enemy.getHeight()/2,
+                        enemy.getWidth(),
+                        enemy.getHeight()))) {
+                    // Apply damage to enemy
+                    enemy.takeDamage(attackDamage.get("ultimate"));
+                    
+                    // Apply knockback
+                    Vector2D knockback = new Vector2D(
+                        player.isFacingRight() ? 400 : -400, 
+                        -200
+                    );
+                    enemy.applyImpulse(knockback.getX(), knockback.getY());
+                }
+            }
+        }
+        */
     }
     
     /**
@@ -177,27 +303,33 @@ public class PlayerAttackComponent implements Component {
         ultimateChargeStartTime = currentTime;
         ultimateChargingProgress = 0f;
         
+        // Reset effect flags
+        hasAppliedSlowmo = false;
+        hasAppliedLetterbox = false;
+        hasAppliedCameraEffects = false;
+        
         // Set player state
         player.setCurrentState(PlayerState.CASTING);
         player.setCasting(true);
         
+        // Disable player input during charge
+        player.setInputEnabled(false);
+        
         // Lock animation during charge
         player.lockAnimation(ultimateChargeTime);
         
-        // Slow down time during charging
+        // Play charge sound effect
         if (game != null) {
-            TimeManager.getInstance().setTimeScale(ULTIMATE_TIME_SCALE, 0.3f, 0f);
+            game.getAudioManager().playSoundEffect("charge_ultimate.wav", 0.8f);
         }
         
-        // Apply camera effect for charging - zoom out slightly
+        // Apply initial camera effect - slight zoom out
         if (game != null && game.getSceneManager().getCurrentScene().getCamera() instanceof CinematicCamera) {
             CinematicCamera camera = (CinematicCamera) game.getSceneManager().getCurrentScene().getCamera();
             camera.setZoom(0.9, 0.9, 0.3);
         }
     }
     
- // In PlayerAttackComponent.java
-
     /**
      * Executes the ultimate attack after charging
      */
@@ -231,7 +363,7 @@ public class PlayerAttackComponent implements Component {
                 ultimateSprite.reset();
                 player.setCurrentState(PlayerState.ATTACKING);
                 // Lock animation during ultimate attack
-                player.lockAnimation(1500); // Adjust based on animation length
+                player.lockAnimation(ultimateDuration);
             }
         }
         
@@ -255,6 +387,11 @@ public class PlayerAttackComponent implements Component {
             baseHitbox.height
         );
         
+        // Play ultimate attack sound
+        if (game != null) {
+            game.getAudioManager().playSoundEffect("ultimate_attack.wav", 1.0f);
+        }
+        
         // Apply cinematic camera effect
         if (game != null && game.getSceneManager().getCurrentScene().getCamera() instanceof CinematicCamera) {
             CinematicCamera camera = (CinematicCamera) game.getSceneManager().getCurrentScene().getCamera();
@@ -274,6 +411,7 @@ public class PlayerAttackComponent implements Component {
         // Slow down time with TimeManager
         TimeManager.getInstance().setTimeScale(ULTIMATE_TIME_SCALE, 0.1f, 1.0f);
     }
+    
     /**
      * Completes the ultimate attack
      */
@@ -285,6 +423,9 @@ public class PlayerAttackComponent implements Component {
         player.setAffectedByGravity(true);
         player.setCasting(false);
         player.setCurrentState(player.isOnGround() ? PlayerState.IDLE : PlayerState.FALLING);
+        
+        // Re-enable player input
+        player.setInputEnabled(true);
         
         // Apply camera flash effect
         if (game != null && game.getSceneManager().getCurrentScene().getCamera() instanceof CinematicCamera) {
@@ -298,6 +439,44 @@ public class PlayerAttackComponent implements Component {
         
         // Reset time scale if needed
         TimeManager.getInstance().resetTimeScale();
+        
+        // Play completion sound
+        if (game != null) {
+            game.getAudioManager().playSoundEffect("ultimate_complete.wav", 0.7f);
+        }
+    }
+    
+    /**
+     * Performs a light attack
+     */
+    public void performLightAttack() {
+        if (player.isAnimationLocked() || isAttacking || isChargingUltimate || isExecutingUltimate) {
+            // Check for combo opportunity
+            if (isAttacking && comboCount < 3 && 
+                System.currentTimeMillis() - lastAttackTime < comboWindow) {
+                queueComboAttack();
+            }
+            return;
+        }
+        
+        isAttacking = true;
+        player.setAttacking(true);
+        lastAttackTime = System.currentTimeMillis();
+        
+        // Set appropriate sprite
+        Sprite attackSprite = attackManager.getSprite("light_attack");
+        if (attackSprite != null) {
+            player.setCurrentState(PlayerState.ATTACKING);
+            
+            // Reset the sprite animation
+            attackSprite.reset();
+            
+            // Lock animation for attack duration
+            player.lockAnimation(400);
+            
+            // Create attack hitbox (position will be updated during rendering)
+            createHitbox("light_attack");
+        }
     }
     
     /**
@@ -317,6 +496,104 @@ public class PlayerAttackComponent implements Component {
             // Create dash attack hitbox
             createHitbox("dash");
         }
+    }
+    
+    /**
+     * Queues the next combo attack
+     */
+    private void queueComboAttack() {
+        comboCount++;
+        isComboAttacking = true;
+        lastAttackTime = System.currentTimeMillis();
+        
+        // Set appropriate combo animation
+        Sprite comboSprite = attackManager.getSprite("combo_attack");
+        if (comboSprite != null) {
+            comboSprite.reset();
+            
+            // Lock animation for combo duration (slightly longer)
+            player.lockAnimation(500);
+            
+            // Create appropriate hitbox for this combo stage
+            createHitbox("combo_attack_" + comboCount);
+        }
+    }
+    
+    /**
+     * Resets the combo state
+     */
+    private void resetCombo() {
+        comboCount = 0;
+        isComboAttacking = false;
+    }
+    
+    /**
+     * Updates the current attack
+     */
+    private void updateAttack(long deltaTime) {
+        // Check if attack animation is complete
+        Sprite currentSprite = player.getCurrentSprite();
+        
+        if (currentSprite != null) {
+            if (!currentSprite.isLooping() && currentSprite.hasCompleted()) {
+                // Attack animation complete
+                completeAttack();
+            }
+        } else if (currentSprite != null && 
+                  currentSprite.getFrameIndex() == currentSprite.getTotalFrames() - 1) {
+            // Attack animation likely complete based on frame index
+            completeAttack();
+        }
+    }
+    
+    /**
+     * Completes the current attack
+     */
+    private void completeAttack() {
+        isAttacking = false;
+        
+        // Return to appropriate idle state
+        if (player.isOnGround()) {
+            player.setCurrentState(PlayerState.IDLE);
+        } else {
+            player.setCurrentState(player.getVelocity().getY() < 0 ? 
+                PlayerState.JUMPING : PlayerState.FALLING);
+        }
+        
+        // Unlock animations
+        player.unlockAnimation();
+        
+        // Update sprite for new state
+        player.updateSpriteForState();
+    }
+    
+    /**
+     * Creates an attack hitbox based on the specified attack type
+     */
+    private void createHitbox(String attackType) {
+        Rectangle baseHitbox = attackHitboxes.get(attackType);
+        if (baseHitbox == null) return;
+        
+        // Adjust hitbox based on player facing direction
+        int hitboxX;
+        if (player.isFacingRight()) {
+            hitboxX = (int)player.getPosition().getX() + baseHitbox.x;
+        } else {
+            hitboxX = (int)player.getPosition().getX() - baseHitbox.x - baseHitbox.width;
+        }
+        
+        int hitboxY = (int)player.getPosition().getY() + baseHitbox.y;
+        
+        // Create actual hitbox rectangle
+        Rectangle hitbox = new Rectangle(
+            hitboxX,
+            hitboxY,
+            baseHitbox.width,
+            baseHitbox.height
+        );
+        
+        // Register hitbox with physics system for actual damage
+        System.out.println("Created " + attackType + " hitbox at: " + hitbox);
     }
     
     /**
@@ -374,128 +651,9 @@ public class PlayerAttackComponent implements Component {
         return comboCount;
     }
     
-    private void updateAttack(long deltaTime) {
-        // Check if attack animation is complete
-        Sprite currentSprite = player.getCurrentSprite();
-        
-        if (currentSprite != null) {
-            if (!currentSprite.isLooping() && currentSprite.hasCompleted()) {
-                // Attack animation complete
-                completeAttack();
-            }
-        } else if (currentSprite != null && 
-                  currentSprite.getFrameIndex() == currentSprite.getTotalFrames() - 1) {
-            // Attack animation likely complete based on frame index
-            completeAttack();
-        }
-    }
-    
-    private void completeAttack() {
-        isAttacking = false;
-        
-        // Return to appropriate idle state
-        if (player.isOnGround()) {
-            player.setCurrentState(PlayerState.IDLE);
-        } else {
-            player.setCurrentState(player.getVelocity().getY() < 0 ? 
-                PlayerState.JUMPING : PlayerState.FALLING);
-        }
-        
-        // Unlock animations
-        player.unlockAnimation();
-        
-        // Update sprite for new state
-        player.updateSpriteForState();
-    }
-    
     @Override
     public ComponentType getType() {
         return ComponentType.COMBAT;
-    }
-    
-    public void performLightAttack() {
-        if (player.isAnimationLocked() || isAttacking || isChargingUltimate || isExecutingUltimate) {
-            // Check for combo opportunity
-            if (isAttacking && comboCount < 3 && 
-                System.currentTimeMillis() - lastAttackTime < comboWindow) {
-                queueComboAttack();
-            }
-            return;
-        }
-        
-        isAttacking = true;
-        player.setAttacking(true);
-        lastAttackTime = System.currentTimeMillis();
-        
-        // Set appropriate sprite
-        Sprite attackSprite = attackManager.getSprite("light_attack");
-        if (attackSprite != null) {
-            player.setCurrentState(PlayerState.ATTACKING);
-            
-            // Reset the sprite animation
-            attackSprite.reset();
-            
-            // Lock animation for attack duration
-            player.lockAnimation(400);
-            
-            // Create attack hitbox (position will be updated during rendering)
-            createHitbox("light_attack");
-        }
-    }
-    
-    private void queueComboAttack() {
-        comboCount++;
-        isComboAttacking = true;
-        lastAttackTime = System.currentTimeMillis();
-        
-        // Set appropriate combo animation
-        Sprite comboSprite = attackManager.getSprite("combo_attack");
-        if (comboSprite != null) {
-            comboSprite.reset();
-            
-            // Lock animation for combo duration (slightly longer)
-            player.lockAnimation(500);
-            
-            // Create appropriate hitbox for this combo stage
-            createHitbox("combo_attack_" + comboCount);
-        }
-    }
-    
-    /**
-     * Creates an attack hitbox based on the specified attack type
-     */
-    private void createHitbox(String attackType) {
-        Rectangle baseHitbox = attackHitboxes.get(attackType);
-        if (baseHitbox == null) return;
-        
-        // Adjust hitbox based on player facing direction
-        int hitboxX;
-        if (player.isFacingRight()) {
-            hitboxX = (int)player.getPosition().getX() + baseHitbox.x;
-        } else {
-            hitboxX = (int)player.getPosition().getX() - baseHitbox.x - baseHitbox.width;
-        }
-        
-        int hitboxY = (int)player.getPosition().getY() + baseHitbox.y;
-        
-        // Create actual hitbox rectangle
-        Rectangle hitbox = new Rectangle(
-            hitboxX,
-            hitboxY,
-            baseHitbox.width,
-            baseHitbox.height
-        );
-        
-        // Register hitbox with physics system for actual damage
-        System.out.println("Created " + attackType + " hitbox at: " + hitbox);
-    }
-    
-    /**
-     * Resets the combo state
-     */
-    private void resetCombo() {
-        comboCount = 0;
-        isComboAttacking = false;
     }
     
     /**

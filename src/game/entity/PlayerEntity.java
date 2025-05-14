@@ -797,4 +797,15 @@ public class PlayerEntity extends AbstractEntity {
     
     // Sprite getter
     public Sprite getCurrentSprite() { return animationComponent.getCurrentSprite(); }
+    
+    /**
+     * Gets the input component
+     * @return The input component, or null if not present
+     */
+    public PlayerInputComponent getInputComponent() {
+        if (hasComponent(ComponentType.INPUT)) {
+            return getComponent(ComponentType.INPUT);
+        }
+        return null;
+    }
 }

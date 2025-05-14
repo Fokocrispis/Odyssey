@@ -36,6 +36,10 @@ public class PlayerInputComponent implements Component {
     private boolean wasPressingDown = false;
     private long downAndMoveTime = 0;
     
+    // Ultimate attack input tracking
+    private boolean ultimateButtonPressed = false;
+    private boolean ultimateCancelled = false;
+    
     private boolean enabled = true;
     
     public PlayerInputComponent(PlayerEntity player, KeyboardInput input) {
@@ -45,8 +49,11 @@ public class PlayerInputComponent implements Component {
     
     @Override
     public void update(long deltaTime) {
-    	if (!enabled) return;
+        if (!enabled) return;
         long currentTime = System.currentTimeMillis();
+        
+        // Reset ultimate cancel flag
+        ultimateCancelled = false;
         
         // Always capture input, even when animation-locked
         captureInputState(currentTime);
@@ -57,6 +64,7 @@ public class PlayerInputComponent implements Component {
             handleJumpInput(currentTime);
             handleSpecialMovement(currentTime);
             handleCombatInput(currentTime);
+            handleUltimateInput(currentTime);
         } else {
             // Even when locked, we need to track input states for next frame
             updateInputTracking(currentTime);
@@ -65,18 +73,16 @@ public class PlayerInputComponent implements Component {
             if (player.isAttacking()) {
                 handleComboInput(currentTime);
             }
+            
+            // Check for ultimate attack cancellation
+            if (player.hasComponent(ComponentType.COMBAT)) {
+                PlayerAttackComponent attackComponent = player.getComponent(ComponentType.COMBAT);
+                if (attackComponent.isChargingUltimate() && input.isKeyJustPressed(KeyEvent.VK_ESCAPE)) {
+                    ultimateCancelled = true;
+                }
+            }
         }
     }
-    
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-    
-    // (Keep the existing captureInputState and updateInputTracking methods)
     
     /**
      * Captures the current input state for tracking purposes
@@ -105,6 +111,17 @@ public class PlayerInputComponent implements Component {
         // Update previous states
         wasPressingDown = downPressed;
         wasMovingHorizontally = horizontalMovement;
+        
+        // Track ultimate button press
+        boolean ultimateKeyDown = input.isKeyPressed(KeyEvent.VK_V);
+        
+        // Set flag if key was just pressed
+        if (ultimateKeyDown && !ultimateButtonPressed) {
+            ultimateButtonPressed = true;
+        } else if (!ultimateKeyDown && ultimateButtonPressed) {
+            // Key was released
+            ultimateButtonPressed = false;
+        }
     }
     
     /**
@@ -115,8 +132,41 @@ public class PlayerInputComponent implements Component {
         player.setWasTryingToMove(wasTryingToMove);
     }
     
+    /**
+     * Handles ultimate attack input
+     */
+    private void handleUltimateInput(long currentTime) {
+        // Check for ultimate attack trigger key (V)
+        if (input.isKeyJustPressed(KeyEvent.VK_V)) {
+            // Make sure we have the combat component
+            if (player.hasComponent(ComponentType.COMBAT)) {
+                PlayerAttackComponent attackComponent = player.getComponent(ComponentType.COMBAT);
+                attackComponent.chargeUltimateAttack();
+            }
+        }
+    }
+    
+    /**
+     * Handles combo input during animation lock
+     */
+    private void handleComboInput(long currentTime) {
+        // Check if we have the combat component
+        if (!player.hasComponent(ComponentType.COMBAT)) return;
+        
+        PlayerAttackComponent attackComponent = player.getComponent(ComponentType.COMBAT);
+        
+        // Check for combo opportunity
+        if (input.isKeyJustPressed(KeyEvent.VK_X) && 
+            currentTime - lastAttackTime <= COMBO_WINDOW && 
+            player.isAttacking()) {
+            
+            // Queue next combo attack
+            attackComponent.performLightAttack(); // This will check internally if combo is possible
+            lastAttackTime = currentTime;
+        }
+    }
+    
     private void handleMovementInput(long currentTime) {
-        // (Keep the existing code)
         wasTryingToMove = false;
         
         // Handle actions based on DOWN key
@@ -126,29 +176,6 @@ public class PlayerInputComponent implements Component {
         
         // Only handle crouching & sliding if not dashing
         if (downPressed && player.isOnGround() && !player.isDashing()) {
-        	
-            PlayerAttackComponent attackComponent = null;
-            if (player.hasComponent(ComponentType.COMBAT)) {
-                attackComponent = player.getComponent(ComponentType.COMBAT);
-            }
-            
-            // Basic attack (using X)
-            if (input.isKeyJustPressed(KeyEvent.VK_X)) {
-                if (attackComponent != null) {
-                    attackComponent.performLightAttack();
-                } else {
-                    // Fallback to old attack method if component not found
-                    player.performBasicAttack();
-                }
-                lastAttackTime = currentTime;
-            }
-            
-            // Ultimate attack (using V or other preferred key)
-            if (input.isKeyJustPressed(KeyEvent.VK_V)) {
-                if (attackComponent != null) {
-                    attackComponent.chargeUltimateAttack();
-                }
-            }
             
             // Check for sliding if we're running or moving fast
             if (wasRunning && 
@@ -230,8 +257,6 @@ public class PlayerInputComponent implements Component {
         
         player.setWasTryingToMove(wasTryingToMove);
     }
-    
-    // (Keep the existing handleJumpInput and handleSpecialMovement methods)
     
     private void handleJumpInput(long currentTime) {
         // Jump input with buffering
@@ -334,28 +359,6 @@ public class PlayerInputComponent implements Component {
         }
     }
     
-    /**
-     * Handle combo inputs even during animation lock
-     */
-    private void handleComboInput(long currentTime) {
-        // Check if we have the combat component
-        if (!player.hasComponent(ComponentType.COMBAT)) return;
-        
-        PlayerAttackComponent attackComponent = player.getComponent(ComponentType.COMBAT);
-        
-        // Check for combo opportunity
-        if (input.isKeyJustPressed(KeyEvent.VK_X) && 
-            currentTime - lastAttackTime <= COMBO_WINDOW && 
-            player.isAttacking()) {
-            
-            // Queue next combo attack
-            attackComponent.performLightAttack(); // This will check internally if combo is possible
-            lastAttackTime = currentTime;
-        }
-    }
-    
-    // (Keep the existing teleport and hook methods)
-    
     private void performTeleport(double distance) {
         // Only teleport if not animation-locked
         if (player.isAnimationLocked()) return;
@@ -414,6 +417,21 @@ public class PlayerInputComponent implements Component {
             // Lock animation for hook
             player.lockAnimation(400);
         }
+    }
+    
+    /**
+     * Checks if the ultimate attack has been cancelled
+     */
+    public boolean isUltimateCancelled() {
+        return ultimateCancelled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
     }
 
     @Override

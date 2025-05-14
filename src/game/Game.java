@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 
+import game.audio.SoundManager;
 import game.camera.Camera;
 import game.input.KeyboardInput;
 import game.scene.SceneManager;
@@ -273,5 +274,13 @@ public class Game {
             super.paintComponent(g);
             renderFunction.accept((Graphics2D) g);
         }
+    }
+    
+    /**
+     * Gets the audio manager
+     * @return The audio manager
+     */
+    public SoundManager getAudioManager() {
+        return SoundManager.getInstance();
     }
 }
