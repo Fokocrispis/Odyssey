@@ -1,4 +1,5 @@
-// src/game/GameLoop.java
+// Modify GameLoop.java to include time scaling
+
 package game;
 
 import java.time.Duration;
@@ -7,6 +8,7 @@ import java.util.function.Supplier;
 
 /**
  * Manages the main game loop with fixed time steps.
+ * Updated to support time scaling for cinematic effects.
  */
 public class GameLoop {
     private final int targetFps;
@@ -26,6 +28,9 @@ public class GameLoop {
     
     // Static field to store current FPS for display
     private static int currentFPS = 0;
+    
+    // Reference to TimeManager
+    private final TimeManager timeManager = TimeManager.getInstance();
 
     /**
      * Creates a new game loop.
@@ -77,11 +82,17 @@ public class GameLoop {
             if (loopTimeProgress >= 1) {
                 // Calculate delta time for smooth updates
                 long currentFrameTime = System.currentTimeMillis();
-                long deltaTime = currentFrameTime - previousFrameTime;
+                long unscaledDeltaTime = currentFrameTime - previousFrameTime;
                 previousFrameTime = currentFrameTime;
+                
+                // Update time manager with unscaled time
+                timeManager.update(unscaledDeltaTime);
+                
+                // Scale delta time for everything else
+                long scaledDeltaTime = timeManager.scaleTime(unscaledDeltaTime);
 
-                // Update and render the game
-                this.update.accept(deltaTime);
+                // Update and render the game with scaled time
+                this.update.accept(scaledDeltaTime);
                 this.render.run();
 
                 frameCount++;

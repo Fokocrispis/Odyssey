@@ -115,6 +115,30 @@ public class PlayerInputComponent implements Component {
         
         // Only handle crouching & sliding if not dashing
         if (downPressed && player.isOnGround() && !player.isDashing()) {
+        	
+            PlayerAttackComponent attackComponent = null;
+            if (player.hasComponent(ComponentType.COMBAT)) {
+                attackComponent = player.getComponent(ComponentType.COMBAT);
+            }
+            
+            // Basic attack (using X)
+            if (input.isKeyJustPressed(KeyEvent.VK_X)) {
+                if (attackComponent != null) {
+                    attackComponent.performLightAttack();
+                } else {
+                    // Fallback to old attack method if component not found
+                    player.performBasicAttack();
+                }
+                lastAttackTime = currentTime;
+            }
+            
+            // Ultimate attack (using V or other preferred key)
+            if (input.isKeyJustPressed(KeyEvent.VK_V)) {
+                if (attackComponent != null) {
+                    attackComponent.chargeUltimateAttack();
+                }
+            }
+            
             // Check for sliding if we're running or moving fast
             if (wasRunning && 
                 !player.isSliding() && 

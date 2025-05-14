@@ -137,8 +137,8 @@ public class PlayerAnimationComponent implements Component {
         // Turn sprite adjustments
         Sprite turnSprite = contextualSprites.get("turn_left");
         if (turnSprite != null) {
-            turnSprite.setScale(3.1, 3.0);
-            turnSprite.setOffset(10, 0);
+            turnSprite.setScale(3.0, 3.0);
+            turnSprite.setOffset(00, 30);
         }
         
         System.out.println("Applied manual sprite offsets to animations");
