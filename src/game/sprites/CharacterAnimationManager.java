@@ -42,12 +42,12 @@ public class CharacterAnimationManager {
         double scale = 3.0;
         
         // Register required animations with their configurations
-        registerAnimation("idle", "Idle", 6, frameSize, scale, 1000, true);
+        registerAnimation("idle", "Idle", 6, frameSize, scale, 3000, true);
         registerAnimation("run", "Running", 8, frameSize, scale, 800, true);
         registerAnimation("to_run", "ToRun", 3, frameSize, scale, 300, false);
         registerAnimation("light_attack", "LightAtk", 12, frameSize, scale, 500, false);
         registerAnimation("dash", "Dashing", 3, frameSize, scale, 200, false);
-        registerAnimation("break_run", "BreakRun", 7, frameSize, scale, 400, false);
+        registerAnimation("break_run", "BreakRun", 7, frameSize, scale, 5000, false);
         registerAnimation("land", "Land", 5, frameSize, scale, 300, false);
         
         // Load any custom animations specific to this character
@@ -121,7 +121,7 @@ public class CharacterAnimationManager {
             double scale = 3.0;
             
             // Add walking animation for Joanna - keeping consistent with the implementation approach
-            registerAnimation("walk", "Walking", 18, frameSize, scale, 1000, true);
+            registerAnimation("walk", "Walking", 18, frameSize, scale, 1500, true);
         }
     }
     

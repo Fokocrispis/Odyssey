@@ -239,7 +239,7 @@ public class MainMenuScene extends AbstractScene {
         Font titleFont = bitPotionFont.deriveFont(fontSize * titleScale);
         g.setFont(titleFont);
         
-        String title = "Odissey";
+        String title = "Odyssey";
         int titleWidth = g.getFontMetrics().stringWidth(title);
         int titleX = (game.getWidth() - titleWidth) / 2;
         int titleY = 180; // Slightly lower position for the new title

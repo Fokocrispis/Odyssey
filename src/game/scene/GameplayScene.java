@@ -11,6 +11,7 @@ import game.Game;
 import game.GameObject;
 import game.Vector2D;
 import game.audio.SoundManager;
+import game.camera.CinematicCamera;
 import game.entity.BoxEntity;
 import game.entity.BuffEffect;
 import game.entity.BuffType;
@@ -52,18 +53,6 @@ public class GameplayScene extends AbstractScene {
      */
     public GameplayScene(Game game) {
         super(game);
-    }
-    
-    @Override
-    protected void setupCamera() {
-        super.setupCamera();
-        
-        // Set camera world bounds to match scene size
-        camera.setWorldBounds(SCENE_WIDTH, SCENE_HEIGHT);
-        
-        // Set camera to follow player smoothly
-        camera.setSmoothFactor(0.15);
-        camera.setSmoothEnabled(true);
     }
     
     @Override
@@ -412,27 +401,6 @@ public class GameplayScene extends AbstractScene {
         player.setVelocity(new Vector2D(0, 0));
     }
     
-    @Override
-    public void render(Graphics2D g) {
-        // Apply camera transformations
-        camera.apply(g);
-        
-        // Render the parallax background layers
-        renderBackground(g);
-        
-        // Render all game objects (floor, player, platforms, etc.)
-        for (GameObject gameObject : gameObjects) {
-            if (!(gameObject instanceof BackgroundLayer)) {
-                gameObject.render(g);
-            }
-        }
-        
-        // Reset camera transformation for UI
-        camera.reset(g);
-        
-        // Render UI
-        renderUI(g);
-    }
     
     /**
      * Renders the scene background with parallax layers
@@ -616,5 +584,47 @@ public class GameplayScene extends AbstractScene {
         g.setColor(Color.GRAY);
         g.drawString("Music: " + (soundManager.getMusicVolume() > 0 ? "ON" : "OFF"), textX - 30, textY + 120);
         g.drawString("Volume: " + (int)(soundManager.getMasterVolume() * 100) + "%", textX - 30, textY + 140);
+    }
+    
+ // In GameplayScene.java, modify these methods:
+
+    @Override
+    protected void setupCamera() {
+        // Use CinematicCamera instead of regular Camera
+        this.camera = new CinematicCamera(game.getWidth(), game.getHeight());
+        
+        // Set camera world bounds to match scene size
+        camera.setWorldBounds(SCENE_WIDTH, SCENE_HEIGHT);
+        
+        // Set camera to follow player smoothly
+        camera.setSmoothFactor(0.15);
+        camera.setSmoothEnabled(true);
+    }
+
+    @Override
+    public void render(Graphics2D g) {
+        // Apply camera transformations
+        camera.apply(g);
+        
+        // Render the parallax background layers
+        renderBackground(g);
+        
+        // Render all game objects (floor, player, platforms, etc.)
+        for (GameObject gameObject : gameObjects) {
+            if (!(gameObject instanceof BackgroundLayer)) {
+                gameObject.render(g);
+            }
+        }
+        
+        // Reset camera transformation for UI
+        camera.reset(g);
+        
+        // Render camera effects (flash, etc.)
+        if (camera instanceof CinematicCamera) {
+            ((CinematicCamera)camera).renderEffects(g);
+        }
+        
+        // Render UI
+        renderUI(g);
     }
 }
