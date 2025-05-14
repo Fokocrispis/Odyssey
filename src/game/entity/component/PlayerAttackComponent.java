@@ -196,7 +196,7 @@ public class PlayerAttackComponent implements Component {
         }
     }
     
- // Excerpt of the update to PlayerAttackComponent.java - focusing on ultimate attack modifications
+ // In PlayerAttackComponent.java
 
     /**
      * Executes the ultimate attack after charging
@@ -219,6 +219,21 @@ public class PlayerAttackComponent implements Component {
         
         // Reset normal gravity during dash
         player.setAffectedByGravity(false);
+        
+        // Set appropriate sprite for ultimate attack
+        PlayerAnimationComponent animComponent = null;
+        if (player.hasComponent(ComponentType.ANIMATION)) {
+            animComponent = player.getComponent(ComponentType.ANIMATION);
+            
+            // Try to get the LightCut animation
+            Sprite ultimateSprite = animComponent.getAnimation("light_cut");
+            if (ultimateSprite != null) {
+                ultimateSprite.reset();
+                player.setCurrentState(PlayerState.ATTACKING);
+                // Lock animation during ultimate attack
+                player.lockAnimation(1500); // Adjust based on animation length
+            }
+        }
         
         // Create attack hitbox
         Rectangle baseHitbox = attackHitboxes.get("ultimate");
@@ -252,14 +267,13 @@ public class PlayerAttackComponent implements Component {
             camera.setFocusTarget(focusTarget, false);
             camera.setZoom(1.2, 0.8, 0.1);
             
-            // Apply letterbox effect and any other visual effects
+            // Apply ultimate attack effect with letterbox
             camera.createUltimateAttackEffect(2000); // 2 seconds of cinematic effect
         }
         
         // Slow down time with TimeManager
         TimeManager.getInstance().setTimeScale(ULTIMATE_TIME_SCALE, 0.1f, 1.0f);
     }
-    
     /**
      * Completes the ultimate attack
      */

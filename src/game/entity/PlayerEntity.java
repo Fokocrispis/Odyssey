@@ -8,12 +8,14 @@ import java.util.Map;
 import game.Game;
 import game.Vector2D;
 import game.entity.component.BuffComponent;
+import game.entity.component.Component;
 import game.entity.component.PlayerAnimationComponent;
 import game.entity.component.PlayerAttackComponent;
 import game.entity.component.PlayerInputComponent;
 import game.entity.component.PlayerPhysicsComponent;
 import game.entity.component.PlayerStateComponent;
 import game.entity.component.PlayerStateComponent.MovementContext;
+import game.entity.component.Component.ComponentType;
 import game.input.KeyboardInput;
 import game.physics.AABB;
 import game.physics.Collision;
@@ -21,6 +23,7 @@ import game.physics.PhysicsObject;
 import game.physics.PhysicsSystem;
 import game.sprites.Sprite;
 
+// Rest of the class remains the same, but ensure you're using ComponentType properly
 public class PlayerEntity extends AbstractEntity {
     // Reference to the game instance
     private final Game game;
@@ -231,10 +234,10 @@ public class PlayerEntity extends AbstractEntity {
      */
     public void setInputEnabled(boolean enabled) {
         // If you have an input component, you can set a flag in it
-        if (hasComponent(ComponentType.INPUT)) {
-            PlayerInputComponent inputComponent = getComponent(ComponentType.INPUT);
-            inputComponent.setEnabled(enabled);
-        }
+    	if (hasComponent(Component.ComponentType.INPUT)) {
+    	    PlayerInputComponent inputComponent = getComponent(Component.ComponentType.INPUT);
+    	    inputComponent.setEnabled(enabled);
+    	}
     }
     
     /**

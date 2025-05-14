@@ -49,6 +49,7 @@ public class CharacterAnimationManager {
         registerAnimation("dash", "Dashing", 3, frameSize, scale, 200, false);
         registerAnimation("break_run", "BreakRun", 7, frameSize, scale, 5000, false);
         registerAnimation("land", "Land", 5, frameSize, scale, 300, false);
+        registerAnimation("light_cut", "LightCut", 29, frameSize, scale, 1500, false);
         
         // Load any custom animations specific to this character
         loadCustomAnimations();

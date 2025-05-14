@@ -5,6 +5,8 @@ import java.awt.Color;
 import java.awt.geom.AffineTransform;
 
 import game.Vector2D;
+import game.camera.effects.CameraEffectsManager;
+import game.camera.effects.LetterboxEffect;
 
 /**
  * Camera extension that supports cinematic effects like
@@ -38,11 +40,15 @@ public class CinematicCamera extends Camera {
     // Store original transform separately
     private AffineTransform tempOriginalTransform = null;
     
+    // Camera effects manager
+    private CameraEffectsManager effectsManager;
+    
     /**
      * Creates a new cinematic camera with the specified viewport size.
      */
     public CinematicCamera(int width, int height) {
         super(width, height);
+        this.effectsManager = new CameraEffectsManager(width, height);
     }
     
     /**
@@ -114,6 +120,11 @@ public class CinematicCamera extends Camera {
             if (flashFramesRemaining <= 0) {
                 shouldFlash = false;
             }
+        }
+        
+        // Update effects manager
+        if (effectsManager != null) {
+            effectsManager.update(deltaTime);
         }
     }
     
@@ -200,6 +211,22 @@ public class CinematicCamera extends Camera {
     }
     
     /**
+     * Creates a cinematic effect for the ultimate attack.
+     * 
+     * @param duration Duration of the effect in milliseconds
+     */
+    public void createUltimateAttackEffect(long duration) {
+        // Apply letterbox effect for ultimate attack
+        effectsManager.createUltimateAttackEffect(duration);
+        
+        // Apply flash effect
+        flash(3, Color.WHITE, 0.5f);
+        
+        // Apply zoom effect with reset
+        setZoomWithReset(1.2, 0.8, 0.1, duration / 1000.0 - 0.5);
+    }
+    
+    /**
      * Applies camera transformations to the graphics context.
      * Call this before rendering game objects.
      * 
@@ -251,6 +278,7 @@ public class CinematicCamera extends Camera {
      * @param g The graphics context
      */
     public void renderEffects(Graphics2D g) {
+        // Apply built-in flash effect
         if (shouldFlash) {
             // Create a composite for transparency
             java.awt.AlphaComposite composite = java.awt.AlphaComposite.getInstance(
@@ -266,6 +294,11 @@ public class CinematicCamera extends Camera {
             
             // Restore original composite
             g.setComposite(originalComposite);
+        }
+        
+        // Render additional effects from manager
+        if (effectsManager != null) {
+            effectsManager.render(g);
         }
     }
     
